@@ -3,7 +3,10 @@ version: '3.9'
 services:
 
   db:
+    container_name: db
     image: postgres:14
+    networks:
+      - backend
     volumes:
       - postgres_data:/var/lib/postgresql/data/
     environment:
@@ -12,8 +15,11 @@ services:
       - POSTGRES_DB=test_db
 
   web:
+    container_name: web_app
     build: ./web_app
-    command: gunicorn stocks_products.wsgi:application --bind 0.0.0.0:8000
+    networks:
+      - backend
+    command: sh ./run.sh
     volumes:
       - static_volume:/usr/src/web_app/staticfiles/
     expose:
@@ -25,7 +31,10 @@ services:
 
 
   nginx:
+    container_name: nginx
     build: ./nginx
+    networks:
+      - backend
     ports:
       - '1488:80'
     volumes:
@@ -33,6 +42,8 @@ services:
     depends_on:
       - web
 
+networks:
+  backend:
 
 volumes:
   postgres_data:
