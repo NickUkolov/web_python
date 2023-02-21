@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import Column, String
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
@@ -16,7 +16,7 @@ class SwapiPeople(Base):
 
     __tablename__ = 'swapi_people'
 
-    id = Column(Integer, primary_key=True)
+    id = Column(String, primary_key=True)
     birth_year = Column(String)
     eye_color = Column(String)
     films = Column(String)
