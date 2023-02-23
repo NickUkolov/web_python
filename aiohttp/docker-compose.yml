@@ -1,0 +1,29 @@
+version: '3.9'
+
+services:
+  db:
+    image: postgres:14
+    ports:
+      - '5431:5432'
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: 1234
+      POSTGRES_DB: test_db
+
+
+  web_app:
+    build: .
+    environment:
+      WAIT_HOSTS: db:5432
+    volumes:
+      - .:/web_app/ # dev
+    ports:
+      - 8080:8080
+    depends_on:
+      - db
+
+
+volumes:
+  postgres_data:
+
+
