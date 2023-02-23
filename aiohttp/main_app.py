@@ -6,6 +6,7 @@ import json
 
 from db import Post, Base
 
+# TODO env for everything
 PG_DSN = 'postgresql+asyncpg://app:1234@db:5432/test_db'
 
 engine = create_async_engine(PG_DSN)
