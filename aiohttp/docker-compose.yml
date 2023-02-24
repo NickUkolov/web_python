@@ -9,14 +9,14 @@ services:
       POSTGRES_USER: app
       POSTGRES_PASSWORD: 1234
       POSTGRES_DB: test_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
 
 
   web_app:
     build: .
     environment:
       WAIT_HOSTS: db:5432
-    volumes:
-      - .:/web_app/ # dev
     ports:
       - 8080:8080
     depends_on:
