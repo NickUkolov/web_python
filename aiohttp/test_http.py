@@ -31,22 +31,38 @@ if __name__ == '__main__':
 
 
 
-    # response = requests.post('http://0.0.0.0:8080/users/',
+    # response = requests.post('http://0.0.0.0:8081/users/',
     #                          json={'name': 'testuser', 'password': 'testpassword', 'email': 'nick@mail.ru'},
     #                          )
     # print(response.status_code)
     # print(response.json())
     #
-    # response = requests.get('http://0.0.0.0:8080/users/1/',
+    # response = requests.post('http://0.0.0.0:8081/users/',
+    #                          json={'name': 'testuser_1', 'password': 'testpassword_1', 'email': 'nic1k@mail.ru'},
     #                          )
     # print(response.status_code)
     # print(response.json())
 
-    response = requests.post('http://0.0.0.0:8080/login/',
-                             json={'name': 'testuser', 'password': 'testpassword'},
+    #
+    response = requests.get('http://0.0.0.0:8081/users/1/', headers={'token': '3242c402-78da-4b16-9561-2090b8a54466'},
                              )
     print(response.status_code)
     print(response.json())
+
+
+
+    # response = requests.post('http://0.0.0.0:8081/login/',
+    #                          json={'name': 'testuser', 'password': 'testpassword',}, headers={'token': '3242c402-78da-4b16-9561-2090b8a54466'},
+    #                          )
+    # print(response.status_code)
+    # print(response.json())
+    #
+    # response = requests.post('http://0.0.0.0:8081/login/',
+    #                          json={'name': 'testuser_1', 'password': 'testpassword_1',}, headers={'token': 'e23725b0-6fc7-4395-92f3-d99bea274144'},
+    #                          )
+    # print(response.status_code)
+    # print(response.json())
+
 
 
     # response = requests.patch('http://0.0.0.0:8080/users/1/',
@@ -60,7 +76,7 @@ if __name__ == '__main__':
     # print(response.status_code)
     # print(response.json())
     #
-    # response = requests.get('http://0.0.0.0:8080/users/1/',
+    # response = requests.get('http://0.0.0.0:8080/users/1/', headers={'token': '93c8c792-402d-4ee2-a97f-b831f4401651'},
     #                          )
     # print(response.status_code)
     # print(response.json())
