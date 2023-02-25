@@ -1,24 +1,28 @@
 import requests
 
 if __name__ == '__main__':
-    # response = requests.post('http://0.0.0.0:8080/posts/',
-    #                          json={'title': 'test_title', 'description': 'test_descr', 'owner': 'mr_kent_paul'},
-    #                          )
+    response = requests.post('http://0.0.0.0:8081/api/posts/',
+                             json={'title': 'test_title', 'description': 'test_descr', 'owner': 'testuser_1'},
+                             headers={'token': 'cbc11fd6-7f29-48f9-bc9b-89c638e8b254'},
+                             )
+    print(response.status_code)
+    print(response.json())
+    #
+    # response = requests.get('http://0.0.0.0:8081/api/posts/3/')
     # print(response.status_code)
     # print(response.json())
     #
-    # response = requests.get('http://0.0.0.0:8080/posts/1/')
-    # print(response.status_code)
-    # print(response.json())
-    #
-    # response = requests.patch('http://0.0.0.0:8080/posts/1/',
+    # response = requests.patch('http://0.0.0.0:8081/api/posts/3/',
     #                          json={'title': 'test_title', 'description': 'interesting', 'owner': 'krasavchik'},
+    #                          headers={'token': 'cbc11fd6-7f29-48f9-bc9b-89c638e8b254'},
     #                          )
     # print(response.status_code)
     # print(response.json())
+
     #
-    #
-    # response = requests.delete('http://0.0.0.0:8080/posts/1/')
+    # response = requests.delete('http://0.0.0.0:8081/api/posts/1/',
+    #                             headers={'token': '9e22a7dd-252e-4f09-b6eb-42e705f46f79'},
+    #                            )
     # print(response.status_code)
     # print(response.json())
     #
@@ -31,34 +35,30 @@ if __name__ == '__main__':
 
 
 
-    # response = requests.post('http://0.0.0.0:8081/users/',
+    # response = requests.post('http://0.0.0.0:8081/api/register/',
     #                          json={'name': 'testuser', 'password': 'testpassword', 'email': 'nick@mail.ru'},
     #                          )
     # print(response.status_code)
     # print(response.json())
     #
-    # response = requests.post('http://0.0.0.0:8081/users/',
+    # response = requests.post('http://0.0.0.0:8081/api/register/',
     #                          json={'name': 'testuser_1', 'password': 'testpassword_1', 'email': 'nic1k@mail.ru'},
     #                          )
     # print(response.status_code)
     # print(response.json())
 
     #
-    response = requests.get('http://0.0.0.0:8081/users/1/', headers={'token': '3242c402-78da-4b16-9561-2090b8a54466'},
-                             )
-    print(response.status_code)
-    print(response.json())
 
 
 
-    # response = requests.post('http://0.0.0.0:8081/login/',
-    #                          json={'name': 'testuser', 'password': 'testpassword',}, headers={'token': '3242c402-78da-4b16-9561-2090b8a54466'},
+    # response = requests.post('http://0.0.0.0:8081/api/login/',
+    #                          json={'name': 'testuser', 'password': 'testpassword',}, headers={'token': '9e22a7dd-252e-4f09-b6eb-42e705f46f79'},
     #                          )
     # print(response.status_code)
     # print(response.json())
     #
-    # response = requests.post('http://0.0.0.0:8081/login/',
-    #                          json={'name': 'testuser_1', 'password': 'testpassword_1',}, headers={'token': 'e23725b0-6fc7-4395-92f3-d99bea274144'},
+    # response = requests.post('http://0.0.0.0:8081/api/login/',
+    #                          json={'name': 'testuser_1', 'password': 'testpassword_1',}, headers={'token': 'cbc11fd6-7f29-48f9-bc9b-89c638e8b254'},
     #                          )
     # print(response.status_code)
     # print(response.json())
@@ -76,7 +76,13 @@ if __name__ == '__main__':
     # print(response.status_code)
     # print(response.json())
     #
-    # response = requests.get('http://0.0.0.0:8080/users/1/', headers={'token': '93c8c792-402d-4ee2-a97f-b831f4401651'},
+    # response = requests.get('http://0.0.0.0:8081/api/users/1/', headers={'token': '9e22a7dd-252e-4f09-b6eb-42e705f46f79'},
     #                          )
     # print(response.status_code)
     # print(response.json())
+
+    # response = requests.get('http://0.0.0.0:8081/api/posts/1/'
+    #                          )
+    # print(response.status_code)
+    # print(response.json())
+
