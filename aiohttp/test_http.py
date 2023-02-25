@@ -8,7 +8,7 @@ if __name__ == '__main__':
     print(response.status_code)
     print(response.json())
     #
-    # response = requests.get('http://0.0.0.0:8081/api/posts/3/')
+    # response = requests.get('http://0.0.0.0:8081/api/posts/7/')
     # print(response.status_code)
     # print(response.json())
     #

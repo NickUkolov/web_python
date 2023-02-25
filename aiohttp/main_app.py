@@ -1,4 +1,4 @@
-from typing import Type
+from typing import Type, Callable, Awaitable
 
 import aiohttp.web
 from aiohttp import web
@@ -18,6 +18,14 @@ PG_DSN = 'postgresql+asyncpg://app:1234@localhost:5431/test_db'
 engine = create_async_engine(PG_DSN)
 Session = sessionmaker(bind=engine, expire_on_commit=False, class_=AsyncSession)
 
+ERROR_TYPE = Type[web.HTTPUnauthorized] | Type[web.HTTPForbidden] | Type[web.HTTPNotFound] | Type[web.HTTPBadRequest] | Type[web.HTTPConflict]
+
+
+def raise_http_error(error_type: ERROR_TYPE, message: str | dict):
+    raise error_type(
+        text=json.dumps({'status': 'error', 'message': message}),
+        content_type='applicatio/json',
+    )
 
 async def orm_context(app: web.Application):
     async with engine.begin() as conn:
@@ -28,20 +36,17 @@ async def orm_context(app: web.Application):
 
 
 @web.middleware
-async def session_middleware(request: web.Request, handler):
+async def session_middleware(request: web.Request, handler: Callable[[web.Request], Awaitable[web.Response]]) -> web.Response:
     async with Session() as session:
         request['session'] = session
         return await handler(request)
 
 
 @web.middleware
-async def authentication_middleware(request: web.Request, handler):
+async def authentication_middleware(request: web.Request, handler: Callable[[web.Request], Awaitable[web.Response]]) -> web.Response:
     req_token = request.headers.get('token')
     if not req_token:
-        raise web.HTTPForbidden(
-            text=json.dumps({'status': 'error', 'message': 'enter the token'}),
-            content_type='application/json',
-        )
+        raise_http_error(web.HTTPForbidden, 'enter the token')
 
     session = request['session']
     db_query = select(User).where(User.token == req_token)
@@ -57,21 +62,15 @@ async def authentication_middleware(request: web.Request, handler):
     return await handler(request)
 
 
-def check_owner(request, user_id):
+def check_owner(request: web.Request, user_id: int):
     if not request['token'] or request['token'][1] != user_id:
-        raise web.HTTPForbidden(
-            text=json.dumps({'status': 'error', 'message': 'only owner has access'}),
-            content_type='application/json',
-        )
+        raise_http_error(web.HTTPForbidden, 'only the owner has access')
 
 
-async def get_db_item(item_id: int, model_name: Type[User] | Type[Post], session: Session):
+async def get_db_item(item_id: int, model_name: Type[User] | Type[Post], session: Session) -> User | Post:
     item = await session.get(model_name, item_id)
     if item is None:
-        raise web.HTTPNotFound(
-            text=json.dumps({'status': 'error', 'message': f'{model_name.__name__} not found'}),
-            content_type='application/json',
-        )
+        raise_http_error(web.HTTPNotFound, f'{model_name.__name__} not found')
     return item
 
 
@@ -96,20 +95,17 @@ class PostView(web.View):
         data['user_id'] = user_id
         user = await get_db_item(item_id=user_id, model_name=User, session=session)
         if data['owner'] != user.name:
-            raise web.HTTPBadRequest(
-                text=json.dumps({'status': 'error', 'message': 'you can use only your name as owner'}),
-                content_type='application/json',
-            )
+            raise_http_error(web.HTTPBadRequest, 'you can use only your user name as owner in post')
 
         post = Post(**data)
         session.add(post)
-        try:
-            await session.commit()
-        except IntegrityError:
-            raise web.HTTPConflict(
-                text=json.dumps({'status': 'error', 'message': 'user already exists'}),
-                content_type='application/json',
-            )
+        # try:
+        await session.commit()
+        # except IntegrityError:
+        #     raise web.HTTPConflict(
+        #         text=json.dumps({'status': 'error', 'message': 'user already exists'}),
+        #         content_type='application/json',
+        #     )
 
         return web.json_response({'status': 'success', 'post_id': post.id})
 
@@ -162,10 +158,8 @@ class UserView(web.View):
         try:
             await session.commit()
         except IntegrityError:
-            raise web.HTTPConflict(
-                text=json.dumps({'status': 'error', 'message': 'user already exists'}),
-                content_type='application/json',
-            )
+            raise_http_error(web.HTTPConflict, 'user already exists')
+
         return web.json_response({'status': 'success', 'id': user.id})
 
     async def patch(self):
@@ -199,14 +193,12 @@ async def login(request):
     db_res = await session.execute(db_query)
     user = db_res.scalar()
     if not user or not check_pw(json_data['password'], user.password):
-        raise web.HTTPUnauthorized(
-            text=json.dumps({'status': 'error', 'message': 'incorrect login data'}),
-            content_type='application/json',
-        )
+        raise_http_error(web.HTTPUnauthorized, 'incorrect login or password')
+
     return web.json_response({'token': str(user.token)})
 
 
-async def main():
+async def main() -> web.Application:
     app = web.Application(middlewares=[session_middleware])
     auth_app = web.Application(middlewares=[session_middleware, authentication_middleware])
     app.cleanup_ctx.append(orm_context)
