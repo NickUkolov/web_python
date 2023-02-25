@@ -1,19 +1,17 @@
+import json
 from typing import Type, Callable, Awaitable
 
-import aiohttp.web
 from aiohttp import web
 from sqlalchemy.exc import IntegrityError, DBAPIError
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import sessionmaker
-import json
 
 from db import Post, Base, User
 from utils import hash_pw, check_pw
 
 # TODO env for everything
-# PG_DSN = 'postgresql+asyncpg://app:1234@db:5432/test_db'
-PG_DSN = "postgresql+asyncpg://app:1234@localhost:5431/test_db"
+PG_DSN = 'postgresql+asyncpg://app:1234@db:5432/test_db'
 
 engine = create_async_engine(PG_DSN)
 Session = sessionmaker(bind=engine, expire_on_commit=False, class_=AsyncSession)
@@ -36,7 +34,6 @@ def raise_http_error(error_type: ERROR_TYPE, message: str | dict):
 
 async def orm_context(app: web.Application):
     async with engine.begin() as conn:
-        # await conn.run_sync(Base.metadata.drop_all)
         await conn.run_sync(Base.metadata.create_all)
     yield
     await engine.dispose()
@@ -71,11 +68,13 @@ async def authentication_middleware(
             content_type="application/json",
         )
     user = db_res.scalar()
+    if user is None:
+        raise_http_error(web.HTTPNotFound, "user not found")
     request["token"] = [user.token, user.id]
     return await handler(request)
 
 
-def check_owner(request: web.Request, user_id: int):
+def check_owner(request: web.Request, user_id: int) -> None:
     if not request["token"] or request["token"][1] != user_id:
         raise_http_error(web.HTTPForbidden, "only the owner has access")
 
@@ -135,6 +134,12 @@ class PostView(web.View):
         check_owner(self.request, post.user_id)
 
         data = await self.request.json()
+
+        if any(key in data.keys() for key in ("created_at", "owner", "user_id")):
+            raise_http_error(
+                web.HTTPBadRequest, "you can change only title or description"
+            )
+
         for key, value in data.items():
             setattr(post, key, value)
         session.add(post)
@@ -205,7 +210,7 @@ class UserView(web.View):
         return web.json_response({"status": "delete success"})
 
 
-async def login(request):
+async def login(request: web.Request) -> web.Response:
     session = request["session"]
     json_data = await request.json()
     db_query = select(User).where(User.name == json_data["name"])
@@ -245,7 +250,3 @@ async def main() -> web.Application:
     app.add_subapp(prefix="/api", subapp=auth_app)
 
     return app
-
-
-appp = main()
-aiohttp.web.run_app(appp, port=8081)

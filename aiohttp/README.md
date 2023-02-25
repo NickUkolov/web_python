@@ -1,4 +1,3 @@
-### Для запуска и тестов
+### Для запуска
 ***
-1. ```docker-compose up -d --build```
-2. ```python3 test_http.py```
+```docker-compose up -d --build```
