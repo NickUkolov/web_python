@@ -1,3 +1,5 @@
+from typing import Type
+
 import aiohttp.web
 from aiohttp import web
 from sqlalchemy.exc import IntegrityError, DBAPIError
@@ -61,28 +63,16 @@ def check_owner(request, user_id):
             text=json.dumps({'status': 'error', 'message': 'only owner has access'}),
             content_type='application/json',
         )
-async def get_post(post_id: int, session: Session):
-    post = await session.get(Post, post_id)
 
-    if post is None:
+
+async def get_db_item(item_id: int, model_name: Type[User] | Type[Post], session: Session):
+    item = await session.get(model_name, item_id)
+    if item is None:
         raise web.HTTPNotFound(
-            text=json.dumps({'status': 'error', 'message': 'post not found'}),
+            text=json.dumps({'status': 'error', 'message': f'{model_name.__name__} not found'}),
             content_type='application/json',
         )
-
-    return post
-
-
-async def get_user(user_id: int, session: Session):
-    user = await session.get(User, user_id)
-
-    if user is None:
-        raise web.HTTPNotFound(
-            text=json.dumps({'status': 'error', 'message': 'user not found'}),
-            content_type='application/json',
-        )
-
-    return user
+    return item
 
 
 class PostView(web.View):
@@ -90,17 +80,27 @@ class PostView(web.View):
     async def get(self):
         session = self.request['session']
         post_id = int(self.request.match_info['post_id'])
-        post = await get_post(post_id, session)
+        post = await get_db_item(item_id=post_id, model_name=Post, session=session)
         return web.json_response({
             'title': post.title,
             'description': post.description,
             'owner': post.owner,
-            'created_at': post.created_at.isoformat()
+            'created_at': post.created_at.isoformat(),
+            'user_id': post.user_id
         })
 
     async def post(self):
         session = self.request['session']
         data = await self.request.json()
+        user_id = self.request['token'][1]
+        data['user_id'] = user_id
+        user = await get_db_item(item_id=user_id, model_name=User, session=session)
+        if data['owner'] != user.name:
+            raise web.HTTPBadRequest(
+                text=json.dumps({'status': 'error', 'message': 'you can use only your name as owner'}),
+                content_type='application/json',
+            )
+
         post = Post(**data)
         session.add(post)
         try:
@@ -116,7 +116,10 @@ class PostView(web.View):
     async def patch(self):
         session = self.request['session']
         post_id = int(self.request.match_info['post_id'])
-        post = await get_post(post_id, session)
+        post = await get_db_item(item_id=post_id, model_name=Post, session=session)
+
+        check_owner(self.request, post.user_id)
+
         data = await self.request.json()
         for key, value in data.items():
             setattr(post, key, value)
@@ -128,7 +131,10 @@ class PostView(web.View):
     async def delete(self):
         session = self.request['session']
         post_id = int(self.request.match_info['post_id'])
-        post = await get_post(post_id, session)
+        post = await get_db_item(item_id=post_id, model_name=Post, session=session)
+
+        check_owner(self.request, post.user_id)
+
         await session.delete(post)
         await session.commit()
         return web.json_response({'status': 'delete success'})
@@ -140,7 +146,7 @@ class UserView(web.View):
         user_id = int(self.request.match_info['user_id'])
         check_owner(self.request, user_id)
         session = self.request['session']
-        user = await get_user(user_id, session)
+        user = await get_db_item(item_id=user_id, model_name=User, session=session)
         return web.json_response({
             'id': user.id,
             'name': user.name,
@@ -169,7 +175,7 @@ class UserView(web.View):
         user_data = await self.request.json()
         if 'password' in user_data:
             user_data['password'] = hash_pw(user_data['password'])
-        user = await get_user(user_id, session)
+        user = await get_db_item(item_id=user_id, model_name=User, session=session)
         for key, value in user_data.items():
             setattr(user, key, value)
         session.add(user)
@@ -180,7 +186,7 @@ class UserView(web.View):
         session = self.request['session']
         user_id = int(self.request.match_info['user_id'])
         check_owner(self.request, user_id)
-        user = await get_user(user_id, session)
+        user = await get_db_item(item_id=user_id, model_name=User, session=session)
         await session.delete(user)
         await session.commit()
         return web.json_response({'status': 'delete success'})
@@ -201,25 +207,29 @@ async def login(request):
 
 
 async def main():
-    app = web.Application()
+    app = web.Application(middlewares=[session_middleware])
+    auth_app = web.Application(middlewares=[session_middleware, authentication_middleware])
     app.cleanup_ctx.append(orm_context)
-    app.middlewares.append(session_middleware)
-    app.middlewares.append(authentication_middleware)
     app.add_routes([
-        web.get('/posts/{post_id:\d+}/', PostView),
+        web.post('/api/register/', UserView),
+        web.post('/api/login/', login),
+        web.get('/api/posts/{post_id:\d+}/', PostView),
+
+    ])
+
+    auth_app.add_routes([
         web.post('/posts/', PostView),
         web.delete('/posts/{post_id:\d+}/', PostView),
         web.patch('/posts/{post_id:\d+}/', PostView),
-
-    ])
-    app.add_routes([
         web.get('/users/{user_id:\d+}/', UserView),
-        web.post('/users/', UserView),
         web.patch('/users/{user_id:\d+}/', UserView),
         web.delete('/users/{user_id:\d+}/', UserView),
-        web.post('/login/', login)
     ])
+
+    app.add_subapp(prefix='/api', subapp=auth_app)
+
     return app
 
-app = main()
-aiohttp.web.run_app(app, port=8081)
+
+appp = main()
+aiohttp.web.run_app(appp, port=8081)
