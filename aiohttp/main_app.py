@@ -10,7 +10,6 @@ from sqlalchemy.orm import sessionmaker
 from db import Post, Base, User
 from utils import hash_pw, check_pw
 
-# TODO env for everything
 PG_DSN = 'postgresql+asyncpg://app:1234@db:5432/test_db'
 
 engine = create_async_engine(PG_DSN)
