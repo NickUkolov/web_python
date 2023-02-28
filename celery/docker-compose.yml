@@ -1,0 +1,38 @@
+version: '3.9'
+
+networks:
+  dev_network:
+
+services:
+
+  redis:
+    image: redis:7.0.0-alpine3.15
+    ports:
+      - "6379:6379"
+    networks:
+      dev_network:
+
+  app:
+    build:
+      context: .
+    ports:
+      - "5000:5000"
+    container_name: app
+    depends_on:
+      - redis
+    networks:
+      dev_network:
+    volumes:
+      - ./app:/app
+
+  celery:
+    build:
+      context: .
+      dockerfile: Dockerfile_celery
+    container_name: celery
+    depends_on:
+      - redis
+    networks:
+      dev_network:
+    volumes:
+      - ./app:/app

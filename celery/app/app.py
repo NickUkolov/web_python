@@ -19,7 +19,7 @@ celery_app.Task = ContextTask
 
 
 @app.route("/upscale", methods=["POST"])
-def upload_n_upscale():
+def upload_n_upscale() -> Response:
     image = request.files.get("image")
     image_bytes = binascii.b2a_base64(image.read()).decode("utf-8")
 
@@ -31,7 +31,7 @@ def upload_n_upscale():
 
 
 @app.route("/tasks/<string:task_id>", methods=["GET"])
-def get_status(task_id):
+def get_status(task_id: str) -> Response:
     task = get_task(task_id)
     task_status = task.status
 
@@ -48,7 +48,7 @@ def get_status(task_id):
 
 
 @app.route("/processed/<string:task_id>", methods=["GET"])
-def processed(task_id):
+def processed(task_id: str) -> Response:
     task = get_task(task_id)
     result = binascii.a2b_base64(task.result)
     return Response(result, content_type="image/png")
