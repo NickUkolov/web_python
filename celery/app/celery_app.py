@@ -1,5 +1,3 @@
-import binascii
-
 from celery import Celery
 from celery.result import AsyncResult
 

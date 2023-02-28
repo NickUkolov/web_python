@@ -1,12 +1,7 @@
 import binascii
-import time
-import redis
-import cv2
-import numpy
-from celery import Celery
-from flask import Flask, request, jsonify, Response, redirect, url_for, send_file
 
-from upscale import upscale
+from flask import Flask, request, jsonify, Response
+
 from celery_app import celery_app, upscale_image, get_task
 
 app = Flask(__name__)
@@ -27,8 +22,23 @@ def upload_n_upscale():
     task = upscale_image.delay(image_bytes, upscale_model='EDSR_x2.pb')
 
     return jsonify({'task_id': task.id})
-    # a = upscale(image_bytes, 'app/EDSR_x2.pb')
-    # return Response(a)
+
+@app.route('/tasks/<string:task_id>', methods=['GET'])
+def get_status(task_id):
+    task = get_task(task_id)
+    task_status = task.status
+    # active_tasks = list(celery_app.control.inspect().active().values())
+    # if any(_task['id'] == task_id for _task in active_tasks):
+    #     return jsonify({'status': task.status, 'result': task.result })
+    if task_status == 'SUCCESS':
+        return jsonify({'status': task.status, 'result_link': f'{request.host_url}processed/{task_id}'})
+    elif task_status == 'FAILED':
+        return jsonify({'status': task.status, 'message': 'incorrect id'})
+    return jsonify({'status': task.status})
+
+
+
+
 
 @app.route('/processed/<string:task_id>', methods=['GET'])
 def processed(task_id):

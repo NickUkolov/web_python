@@ -4,8 +4,10 @@ import cv2
 import numpy
 from cv2 import dnn_superres
 
+# TODO serializer pickle
+# TODO redis autoclean
 
-def upscale(input_bytes: bytes, model_path: str) -> bytes:
+def upscale(input_bytes: bytes, model_path: str) -> str:
     scaler = dnn_superres.DnnSuperResImpl_create()
     scaler.readModel(model_path)
     scaler.setModel("edsr", 2)
